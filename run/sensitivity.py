@@ -62,10 +62,10 @@ def read_sensitivity(options=None):
 
         for filename in Path(directory).glob("*.csv"):
             plan = pd.read_csv(filename)
-            goalkeepers += plan[(plan['week']==gw) & (plan['pos']=='GKP') & (plan['transfer_out']!=1)]['name'].to_list()
-            defenders += plan[(plan['week']==gw) & (plan['pos']=='DEF') & (plan['transfer_out']!=1)]['name'].to_list()
-            midfielders += plan[(plan['week']==gw) & (plan['pos']=='MID') & (plan['transfer_out']!=1)]['name'].to_list()
-            forwards += plan[(plan['week']==gw) & (plan['pos']=='FWD') & (plan['transfer_out']!=1)]['name'].to_list()
+            goalkeepers += plan[(plan['week']==gw) & (plan['squad']==1) & (plan['pos']=='GKP') & (plan['transfer_out']!=1)]['name'].to_list()
+            defenders += plan[(plan['week']==gw) & (plan['squad']==1) & (plan['pos']=='DEF') & (plan['transfer_out']!=1)]['name'].to_list()
+            midfielders += plan[(plan['week']==gw) & (plan['squad']==1) & (plan['pos']=='MID') & (plan['transfer_out']!=1)]['name'].to_list()
+            forwards += plan[(plan['week']==gw) & (plan['squad']==1) & (plan['pos']=='FWD') & (plan['transfer_out']!=1)]['name'].to_list()
             no_plans += 1
 
         keepers = pd.DataFrame(goalkeepers, columns=['player']).value_counts().reset_index(name='PSB')

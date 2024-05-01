@@ -564,6 +564,14 @@ def solve_multi_period_fpl(data, options):
         locked_players = options['locked']
         model.add_constraints((squad[p,w] + squad_fh[p,w] == 1 for p in locked_players for w in gameweeks), name='lock_player')
 
+    if options.get('locked_next_gw', None) is not None:
+        locked_next_gw = options['locked_next_gw']
+        model.add_constraints((squad[p,gameweeks[0]] == 1 for p in locked_next_gw), name='lock_player_next_gw')
+
+    if options.get('banned_next_gw', None) is not None:
+        banned_next_gw = options['banned_next_gw']
+        model.add_constraints((squad[p,gameweeks[0]] == 0 for p in banned_next_gw), name='ban_player_next_gw')
+
     if options.get("no_future_transfer"):
         model.add_constraint(so.expr_sum(transfer_in[p,w] for p in players for w in gameweeks if w > next_gw and w != options.get('use_wc')) == 0, name='no_future_transfer')
 
