@@ -314,6 +314,7 @@ def solve_multi_period_fpl(data, options):
     bench_weights = {int(key): value for (key,value) in bench_weights.items()}
     # wc_limit = options.get('wc_limit', 0)
     ft_value = options.get('ft_value', 1.5)
+    ft_gw_value = {}
     ft_use_penalty = options.get('ft_use_penalty', None)
     itb_value = options.get('itb_value', 0.08)
     ft = data.get('ft', 1)
@@ -559,10 +560,18 @@ def solve_multi_period_fpl(data, options):
         banned_players = options['banned']
         model.add_constraints((so.expr_sum(squad[p,w] for w in gameweeks) == 0 for p in banned_players), name='ban_player')
         model.add_constraints((so.expr_sum(squad_fh[p,w] for w in gameweeks) == 0 for p in banned_players), name='ban_player_fh')
+    
+    if options.get('banned_next_gw', None) is not None:
+        banned_in_gw = [(x, gameweeks[0]) if isinstance(x, int) else tuple(x) for x in options['banned_next_gw']]
+        model.add_constraints((squad[p0, p1] == 0 for (p0, p1) in banned_in_gw), name='ban_player_specified_gw')
 
     if options.get('locked', None) is not None:
         locked_players = options['locked']
         model.add_constraints((squad[p,w] + squad_fh[p,w] == 1 for p in locked_players for w in gameweeks), name='lock_player')
+    
+    if options.get('locked_next_gw', None) is not None:
+        locked_in_gw = [(x, gameweeks[0]) if isinstance(x, int) else tuple(x) for x in options['locked_next_gw']]
+        model.add_constraints((squad[p0, p1] == 1 for (p0, p1) in locked_in_gw), name='lock_player_specified_gw')
 
     if options.get('locked_next_gw', None) is not None:
         locked_next_gw = options['locked_next_gw']
@@ -585,6 +594,10 @@ def solve_multi_period_fpl(data, options):
 
     if options.get("hit_limit", None) is not None:
         model.add_constraint(so.expr_sum(penalized_transfers[w] for w in gameweeks) <= options['hit_limit'], name='horizon_hit_limit')
+
+    if options.get("ft_custom_value", None) is not None:
+        ft_custom_value = {int(key): value for (key, value) in options.get('ft_custom_value', {}).items()}
+        ft_gw_value = {**{gw: ft_value for gw in gameweeks}, **ft_custom_value}
 
     if options.get("future_transfer_limit", None) is not None:
         model.add_constraint(so.expr_sum(transfer_in[p,w] for p in players for w in gameweeks if w > next_gw and w != options.get('use_wc')) <= options['future_transfer_limit'], name='future_tr_limit')
@@ -668,7 +681,7 @@ def solve_multi_period_fpl(data, options):
     # Objectives
     hit_cost = options.get('hit_cost', 4)
     gw_xp = {w: so.expr_sum(points_player_week[p,w] * (lineup[p,w] + captain[p,w] + 0.1*vicecap[p,w] + use_tc[p,w] + so.expr_sum(bench_weights[o] * bench[p,w,o] for o in order)) for p in players) for w in gameweeks}
-    gw_total = {w: gw_xp[w] - hit_cost * penalized_transfers[w] + ft_value * free_transfers[w] - ft_penalty[w] + itb_value * in_the_bank[w] for w in gameweeks}
+    gw_total = {w: gw_xp[w] - hit_cost * penalized_transfers[w] + ft_gw_value.get(w, ft_value) * free_transfers[w] - ft_penalty[w] + itb_value * in_the_bank[w] for w in gameweeks}
     
     if objective == 'regular':
         total_xp = so.expr_sum(gw_total[w] for w in gameweeks)
@@ -827,6 +840,7 @@ def solve_multi_period_fpl(data, options):
                     player_sell_price = 0 if not is_transfer_out else (sell_price[p] if p in price_modified_players and transfer_out_first[p,w].get_value() > 0.5 else buy_price[p])
                     multiplier = 1*(is_lineup==1) + 1*(is_captain==1) + 1*(is_tc==1)
                     xp_cont = points_player_week[p,w] * multiplier
+                    currrent_iter = iter + 1
 
                     # chip
                     if use_wc[w].get_value() > 0.5:
@@ -841,10 +855,10 @@ def solve_multi_period_fpl(data, options):
                         chip_text = ''
                     
                     picks.append([
-                        p, w, lp['web_name'], position, lp['element_type'], lp['name'], player_buy_price, player_sell_price, round(points_player_week[p,w],2), minutes_player_week[p,w], is_squad, is_lineup, bench_value, is_captain, is_vice, is_transfer_in, is_transfer_out, multiplier, xp_cont, chip_text
+                        p, w, lp['web_name'], position, lp['element_type'], lp['name'], player_buy_price, player_sell_price, round(points_player_week[p,w],2), minutes_player_week[p,w], is_squad, is_lineup, bench_value, is_captain, is_vice, is_transfer_in, is_transfer_out, multiplier, xp_cont, chip_text, currrent_iter
                     ])
 
-        picks_df = pd.DataFrame(picks, columns=['id', 'week', 'name', 'pos', 'type', 'team', 'buy_price', 'sell_price', 'xP', 'xMin', 'squad', 'lineup', 'bench', 'captain', 'vicecaptain', 'transfer_in', 'transfer_out', 'multiplier', 'xp_cont', 'chip']).sort_values(by=['week', 'lineup', 'type', 'xP'], ascending=[True, False, True, True])
+        picks_df = pd.DataFrame(picks, columns=['id', 'week', 'name', 'pos', 'type', 'team', 'buy_price', 'sell_price', 'xP', 'xMin', 'squad', 'lineup', 'bench', 'captain', 'vicecaptain', 'transfer_in', 'transfer_out', 'multiplier', 'xp_cont', 'chip', 'iter']).sort_values(by=['week', 'lineup', 'type', 'xP'], ascending=[True, False, True, True])
         total_xp = so.expr_sum((lineup[p,w] + captain[p,w]) * points_player_week[p,w] for p in players for w in gameweeks).get_value()
 
         picks_df.sort_values(by=['week', 'squad', 'lineup', 'bench', 'type'], ascending=[True, False, False, True, True], inplace=True)

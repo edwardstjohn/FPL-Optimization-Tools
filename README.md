@@ -96,7 +96,9 @@ You will need to follow steps below to install required platform and also optimi
         "ev_per_price_cutoff": 20,
         "bench_weights": {"0": 0.03, "1": 0.21, "2": 0.06, "3": 0.003},
         "banned": [],
+        "banned_next_gw": [],
         "locked": [],
+        "locked_next_gw": [],
         "delete_tmp": true,
         "secs": 300,
         "use_cmd": false,
@@ -114,6 +116,7 @@ You will need to follow steps below to install required platform and also optimi
         "run_chip_combinations": {"bb": [], "wc": [], "fh": [], "tc": []},
         "num_transfers": null,
         "hit_limit": null,
+        "ft_custom_value": null,
         "preseason": false,
         "no_trs_except_wc": false,
         "cbc_path": "",
@@ -146,8 +149,10 @@ You will need to follow steps below to install required platform and also optimi
   - `xmin_lb`: cut-off for dropping players below this many minutes expectation
   - `ev_per_price_cutoff`: cut-off percentile for dropping players based on total EV per price (e.g. `20` means drop players below 20% percentile)
   - `bench_weights`: percentage weights in objective for bench players (gk and 3 outfield)
-  - `banned`: list of banned player IDs
+  - `banned`: list of player IDs to be banned over the entire horizon
+  - `banned_next_gw`: list of player IDs to be banned for the next gameweek. Alternatively, you can supply an `[ID, gameweek]` list as an element of the list to ban a player just for one specific gameweek. E.g. `[100, [200, 32]]` bans player with ID 100 for the next gameweek, and bans player with ID 200 for gameweek 32
   - `locked`: list of player IDs to always have during the horizon (e.g. `233` for Salah)
+  - `locked_next_gw`: List of player IDs to force just for the next gameweek. See `banned_next_gw` for extended usage
   - `delete_tmp`: `true` or `false` whether to delete generated temporary files after solve
   - `secs`: time limit for the solve (in seconds)
   - `use_cmd`: whether to use `os.system` or `subprocess` for running solver, default is `false`
@@ -170,6 +175,9 @@ You will need to follow steps below to install required platform and also optimi
   - `num_transfers`: fixed number of transfers for this GW
   - `hit_limit`: limit on total hits can be taken by the solver for entire horizon
   - `hit_cost`: cost of a hit, 4 points by default but can be overriden to reduce hits suggested
+  - `ft_custom_value`: value of keeping your 2nd free transfer before a GW. For example  
+    `"ft_custom_value": {"35": 2, "38": 0.5}`  
+    will set value of 2nd FT for GW35 to 2 EV, and for GW38 to 0.5 EV
   - `preseason`: solve flag for GW1 where team data is not important
   - `no_trs_except_wc`: when `true` prevents solver to make transfers except using wildcard
   - `solver`: solver engine, can use either `cbc` (default) or `highs`  
