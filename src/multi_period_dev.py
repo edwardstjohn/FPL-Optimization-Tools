@@ -315,6 +315,8 @@ def solve_multi_period_fpl(data, options):
         User controlled values for the problem instance
     """
 
+    print("This solver is free for personal, educational, or non-commercial use under the Apache License 2.0. Commercial entities must obtain a Commercial License before accessing, viewing, or using the code for any commercial purposes. Unauthorized access or use by commercial entities without a valid commercial license is strictly prohibited. To obtain a commercial license, please contact us at info@fploptimized.com.")
+
     # Arguments
     problem_id = get_random_id(5)
     horizon = options.get('horizon', 3)
@@ -369,7 +371,7 @@ def solve_multi_period_fpl(data, options):
     all_gw = [next_gw-1] + gameweeks
     order = [0, 1, 2, 3]
     price_modified_players = data['price_modified_players']
-    ft_states = [1, 2, 3, 4, 5]
+    ft_states = [0, 1, 2, 3, 4, 5]
 
     # Model
     model = so.Model(name=problem_name)
